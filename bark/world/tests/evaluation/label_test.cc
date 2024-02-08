@@ -18,6 +18,8 @@
 #include "bark/world/evaluation/ltl/label_functions/ego_rightmost_lane_label_function.hpp"
 #include "bark/world/evaluation/ltl/label_functions/ego_leftmost_lane_label_function.hpp"
 
+#include "bark/world/evaluation/stl/label_functions/safe_distance_label_function.hpp"
+
 #include "bark/commons/params/setter_params.hpp"
 #include "bark/models/behavior/motion_primitives/macro_actions.hpp"
 #include "bark/models/behavior/motion_primitives/primitives/primitive_const_acc_change_to_left.hpp"
@@ -112,6 +114,72 @@ TEST(label_test, safe_distance_longitudinal) {
   EXPECT_TRUE(labels5[label]);
 }
 
+TEST(label_test, safe_distance_longitudinal_stl) {
+  const int ego_id = 1;
+  double v_0 = 8.0;
+  double dv = 0.0;
+  double delta = 1.0;
+  double a_e = -8.0;
+  double a_o = -8.0;
+  double lateral_difference_threshold = 2.0;
+  double signal_period = 200;
+
+  auto evaluator = LabelFunctionPtr(
+      new SafeDistanceQuantizedLabelFunction("safe_distance_quantized", false, delta, delta, a_e, a_o, true, 4, false, 1.0, bark::geometry::B_PI, false, signal_period, true));
+  auto label = evaluator->GetLabel();
+  double stop_dist = v_0 * delta + v_0 * v_0 / (2.0 * -a_e);
+
+  // Case 1
+  assert(stop_dist > 1.0);
+  auto world = make_test_world(1, stop_dist - 1.0, v_0, dv);
+  auto observed_world = world->Observe({ego_id})[0];
+  auto labels = evaluator->Evaluate(observed_world);
+  SafeDistanceQuantizedLabelFunction* sdf = static_cast<SafeDistanceQuantizedLabelFunction*>(evaluator.get());
+  EXPECT_TRUE(labels[label]);  
+  EXPECT_TRUE(sdf->GetCurrentRobustness() > 0);
+  std::cout << "Case 1 passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Case 2
+  double dist = 5.0;
+  auto world2 = make_test_world(1, dist, v_0, dv);
+  auto observed_world2 = world2->Observe({ego_id})[0];
+  auto labels2 = evaluator->Evaluate(observed_world2);
+  EXPECT_FALSE(labels2[label]);
+  EXPECT_TRUE(sdf->GetCurrentRobustness() < 0);
+  std::cout << "Case 2 passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Case 3
+  dist = 2.0;
+  auto world3 = make_test_world(1, dist, v_0, dv);
+  auto observed_world3 = world3->Observe({ego_id})[0];
+  auto labels3 = evaluator->Evaluate(observed_world3);
+  EXPECT_FALSE(labels3[label]);
+  EXPECT_TRUE(sdf->GetCurrentRobustness() < 0);
+  std::cout << "Case 3 passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Case 4
+  delta = 0.5;
+  dist = 4.5;
+  evaluator = LabelFunctionPtr(
+      new SafeDistanceQuantizedLabelFunction("safe_distance_quantized", false, delta, delta, a_e, a_o, true, 4, false, 1.0, bark::geometry::B_PI, false, signal_period, true));
+  auto world4 = make_test_world(1, dist, v_0, dv);
+  auto observed_world4 = world4->Observe({ego_id})[0];
+  auto labels4 = evaluator->Evaluate(observed_world4);
+  sdf = static_cast<SafeDistanceQuantizedLabelFunction*>(evaluator.get());
+  EXPECT_TRUE(labels4[label]);
+  EXPECT_TRUE(sdf->GetCurrentRobustness() > 0);
+  std::cout << "Case 4 passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Case 5
+  dist = 6.0;
+  auto world5 = make_test_world(1, dist, v_0, dv);
+  auto observed_world5 = world5->Observe({ego_id})[0];
+  auto labels5 = evaluator->Evaluate(observed_world5);
+  EXPECT_TRUE(labels5[label]);
+  EXPECT_TRUE(sdf->GetCurrentRobustness() > 0);
+  std::cout << "Case 5 passed: " << sdf->GetCurrentRobustness() << "\n";
+}
+
 TEST(label_test, safe_distance_lateral) {
   const int ego_id = 1;
   double v_0 = 8.0;
@@ -180,6 +248,80 @@ TEST(label_test, safe_distance_lateral) {
   labels = evaluator->Evaluate(observed_world);
   EXPECT_FALSE(labels[label]);
 
+}
+
+TEST(label_test, safe_distance_lateral_stl) {
+  const int ego_id = 1;
+  double v_0 = 8.0;
+  double dv = 0.0;
+  double v_1 = v_0 + dv;
+  double delta = 1.0;
+  double a_e = -8.0;
+  double a_o = -8.0;
+  double lateral_difference_threshold = 2.0;
+  const double max_dyn_acc_lat = 4.0; // Params Single Track Default
+  double signal_period = 200;
+
+  auto evaluator = LabelFunctionPtr(
+      new SafeDistanceQuantizedLabelFunction("safe_distance_quantized", false, delta, delta, a_e, a_o, true, 4, false, 5.0, bark::geometry::B_PI, true, signal_period, true));
+  auto label = evaluator->GetLabel();
+
+  // Longitudinal safe dist not violated -> lateral on same lane -> no violation
+  double stop_dist = v_0 * delta + v_0 * v_0 / (2.0 * -a_e);
+  assert(stop_dist > 1.0);
+  double dist_lat = 0.0;
+  double angle = 0.0;
+  auto world = make_test_world(1, stop_dist - 1.0, v_0, dv, std::make_shared<GoalDefinitionPolygon>(), 0.0, 0.0, dist_lat, angle);
+  auto ego_agent_id = world->GetAgents().begin()->second->GetAgentId();
+  auto observed_world = world->Observe({ego_agent_id})[0];
+  auto labels = evaluator->Evaluate(observed_world);
+  SafeDistanceQuantizedLabelFunction* sdf = static_cast<SafeDistanceQuantizedLabelFunction*>(evaluator.get());
+  EXPECT_TRUE(labels[label]);
+  std::cout << "Case 1 lateral passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Longitudinal safe dist violated -> lateral on same lane -> violated
+  double dist_long = 5.0;
+  dist_lat = 0.0;
+  angle = 0.0;
+  world = make_test_world(1, dist_long, v_0, dv, std::make_shared<GoalDefinitionPolygon>(), 0.0, 0.0, dist_lat, angle);
+  ego_agent_id = world->GetAgents().begin()->second->GetAgentId();
+  observed_world = world->Observe({ego_agent_id})[0];
+  labels = evaluator->Evaluate(observed_world);
+  EXPECT_FALSE(labels[label]);
+  std::cout << "Case 2 lateral passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Longitudinal safe dist violated -> lateral on right of ego zero lat velocity -> not violated
+  dist_long = 0.0;
+  dist_lat = 2.5;
+  angle = 0.0;
+  world = make_test_world(1, dist_long, v_0, dv, std::make_shared<GoalDefinitionPolygon>(), 0.0, 0.0, dist_lat, angle);
+  ego_agent_id = world->GetAgents().begin()->second->GetAgentId();
+  observed_world = world->Observe({ego_agent_id})[0];
+  labels = evaluator->Evaluate(observed_world);
+  EXPECT_TRUE(labels[label]);
+  std::cout << "Case 3 lateral passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Longitudinal safe dist violated -> lateral on left of ego, lat velocity away from ego -> not violated 
+  dist_long = 3.0;
+  angle = B_PI/4.0;
+  dist_lat = 3.5;
+  world = make_test_world(1, dist_long, v_0, dv, std::make_shared<GoalDefinitionPolygon>(), 0.0, 0.0, dist_lat, angle);
+  ego_agent_id = world->GetAgents().begin()->second->GetAgentId();
+  observed_world = world->Observe({ego_agent_id})[0];
+  labels = evaluator->Evaluate(observed_world);
+  EXPECT_TRUE(labels[label]);
+  std::cout << "Case 4 lateral passed: " << sdf->GetCurrentRobustness() << "\n";
+
+  // Longitudinal safe dist violated -> lateral on left of ego, lat velocity towards ego -> violated 
+  dist_long = 3.0;
+  angle = -B_PI/4.0;
+  dist_lat = 3.5;
+  world = make_test_world(1, dist_long, v_0, dv, std::make_shared<GoalDefinitionPolygon>(), 0.0, 0.0, dist_lat, angle);
+  ego_agent_id = world->GetAgents().begin()->second->GetAgentId();
+  observed_world = world->Observe({ego_agent_id})[0];
+  labels = evaluator->Evaluate(observed_world);
+  EXPECT_FALSE(labels[label]);
+  std::cout << "Case 5 lateral passed: " << sdf->GetCurrentRobustness() << "\n";
 }
 
 TEST(label_test, lane_change_right) {

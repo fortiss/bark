@@ -11,6 +11,7 @@
 
 #include "bark/world/evaluation/evaluator_collision_ego_agent.hpp"
 #include "bark/world/evaluation/ltl/evaluator_ltl.hpp"
+#include "bark/world/evaluation/stl/evaluator_stl.hpp"
 
 #include "bark/world/evaluation/ltl/label_functions/agent_at_lane_end_label_function.hpp"
 #include "bark/world/evaluation/ltl/label_functions/agent_beyond_point_label_function.hpp"
@@ -35,6 +36,8 @@
 #include "bark/world/evaluation/ltl/label_functions/rightmost_lane_label_function.hpp"
 #include "bark/world/evaluation/ltl/label_functions/on_road_label_function.hpp"
 #include "bark/world/evaluation/ltl/label_functions/safe_distance_label_function.hpp"
+#include "bark/world/evaluation/stl/label_functions/base_label_function.hpp"
+#include "bark/world/evaluation/stl/label_functions/safe_distance_label_function.hpp"
 #include "bark/world/observed_world.hpp"
 
 using bark::world::ObservedWorldPtr;
@@ -46,7 +49,7 @@ void python_ltl(py::module m) {
 
 #ifdef LTL_RULES
 
-  py::class_<EvaluatorLTL, BaseEvaluator, PyEvaluatorLTL, std::shared_ptr<EvaluatorLTL>>(
+  py::class_<EvaluatorLTL, BaseEvaluator, std::shared_ptr<EvaluatorLTL>>(
       m, "EvaluatorLTL")
       .def(py::init<AgentId, const std::string&, const LabelFunctions&>(),
            py::arg("agent_id"), py::arg("ltl_formula"),
@@ -59,13 +62,28 @@ void python_ltl(py::module m) {
         return "bark.core.world.evaluation.ltl.EvaluatorLTL";
       });
 
+  py::class_<EvaluatorSTL, EvaluatorLTL, std::shared_ptr<EvaluatorSTL>>(
+      m, "EvaluatorSTL")
+      .def(py::init<AgentId, const std::string&, const LabelFunctions&, const bool>(),
+           py::arg("agent_id"), py::arg("ltl_formula"),
+           py::arg("label_functions"),
+           py::arg("eval_return_without_robustness"))
+      .def("__repr__", [](const EvaluatorSTL& g) {
+        return "bark.core.world.evaluation.stl.EvaluatorSTL";
+      });
+
 #endif
   // LABELS
   py::class_<BaseLabelFunction, PyBaseLabelFunction,
              std::shared_ptr<BaseLabelFunction>>(m, "BaseLabelFunction")
       .def(py::init<const std::string&>())
       .def("Evaluate", &BaseLabelFunction::Evaluate);
-  
+
+  py::class_<BaseQuantizedLabelFunction, 
+             std::shared_ptr<BaseQuantizedLabelFunction>>(m, "BaseQuantizedLabelFunction")
+      .def(py::init<float>(), py::arg("robustness"))
+      .def("GetCurrentRobustness", &BaseQuantizedLabelFunction::GetCurrentRobustness);
+
   py::class_<ConstantLabelFunction, BaseLabelFunction,
              std::shared_ptr<ConstantLabelFunction>>(m, "ConstantLabelFunction")
       .def(py::init<const std::string&>())
@@ -85,19 +103,10 @@ void python_ltl(py::module m) {
             return new ConstantLabelFunction(t[0].cast<std::string>());
           }));
 
-  py::class_<SafeDistanceLabelFunction, PySafeDistanceLabelFunction, BaseLabelFunction,
+  py::class_<SafeDistanceLabelFunction, BaseLabelFunction,
              std::shared_ptr<SafeDistanceLabelFunction>>(m, "SafeDistanceLabelFunction")
       .def(py::init<const std::string&, bool, double, double, double, double, bool,
                     unsigned int, bool, double, double, bool>())
-      .def("CheckSafeDistanceLongitudinal", py::overload_cast<const float, const float, const float,
-            const double, const double, const double>(&SafeDistanceLabelFunction::CheckSafeDistanceLongitudinal, py::const_))
-      .def("CheckSafeDistanceLateral", py::overload_cast<const float, const float, const float,
-            const double, const double, const double, const double>(&SafeDistanceLabelFunction::CheckSafeDistanceLateral, py::const_))            
-      .def("CalcVelFrontStar", py::overload_cast<double, double, double>(&PySafeDistanceLabelFunction::CalcVelFrontStar, py::const_)) 
-      .def("CalcSafeDistance0", py::overload_cast<const double, const double, const double>(&PySafeDistanceLabelFunction::CalcSafeDistance0, py::const_))
-      .def("CalcSafeDistance1", py::overload_cast<const double, const double, const double, const double, const double>(&PySafeDistanceLabelFunction::CalcSafeDistance1, py::const_))
-      .def("CalcSafeDistance2", py::overload_cast<const double, const double, const double, const double, const double>(&PySafeDistanceLabelFunction::CalcSafeDistance2, py::const_))
-      .def("CalcSafeDistance3", py::overload_cast<const double, const double, const double, const double, const double>(&PySafeDistanceLabelFunction::CalcSafeDistance3, py::const_))
       .def("__repr__",
            [](const SafeDistanceLabelFunction& g) {
              return "bark.core.world.evaluation.ltl.SafeDistanceLabelFunction";
@@ -122,6 +131,39 @@ void python_ltl(py::module m) {
                 t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
                 t[5].cast<double>(), t[6].cast<bool>(), t[7].cast<unsigned int>(),
                 t[8].cast<bool>(), t[9].cast<double>(), t[10].cast<double>(), t[11].cast<bool>());
+          }));
+
+  py::class_<SafeDistanceQuantizedLabelFunction, SafeDistanceLabelFunction, BaseQuantizedLabelFunction,
+             std::shared_ptr<SafeDistanceQuantizedLabelFunction>>(m, "SafeDistanceQuantizedLabelFunction")
+      .def(py::init<const std::string&, bool, double, double, double, double, bool,
+                    unsigned int, bool, double, double, bool, int, bool>())
+      .def("__repr__",
+           [](const SafeDistanceQuantizedLabelFunction& g) {
+             return "bark.core.world.evaluation.stl.SafeDistanceQuantizedLabelFunction";
+           })
+      .def(py::pickle(
+          [](const SafeDistanceQuantizedLabelFunction& b) {
+            return py::make_tuple(b.GetLabelStr(), b.GetToRear(), b.GetDeltaEgo(),
+                                  b.GetDeltaOthers(), b.GetMaxDecelEgo(),
+                                  b.GetMaxDecelOther(), 
+                                  b.GetConsiderCrossingCorridors(),
+                                  b.GetMaxAgentsForCrossing(),
+                                  b.GetUseFracLateralOffsetParam(),
+                                  b.GetLateralDifferenceThreshold(),
+                                  b.GetAngleDifferenceThreshold(),
+                                  b.GetCheckLateralDist(),
+                                  b.GetSignalSamplingPeriod(),
+                                  b.GetCurrentRobustness());
+          },
+          [](py::tuple t) {
+            if (t.size() != 14)
+              throw std::runtime_error("Invalid label evaluator state!");
+            return new SafeDistanceQuantizedLabelFunction(
+                t[0].cast<std::string>(), t[1].cast<bool>(),
+                t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
+                t[5].cast<double>(), t[6].cast<bool>(), t[7].cast<unsigned int>(),
+                t[8].cast<bool>(), t[9].cast<double>(), t[10].cast<double>(), t[11].cast<bool>(),
+                t[12].cast<int>(), t[13].cast<bool>());
           }));
 
   py::class_<BelowSpeedLimitLabelFunction, BaseLabelFunction,

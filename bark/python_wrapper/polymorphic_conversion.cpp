@@ -64,6 +64,7 @@
 #include "bark/world/evaluation/ltl/label_functions/rightmost_lane_label_function.hpp"
 #include "bark/world/evaluation/ltl/label_functions/ego_leftmost_lane_label_function.hpp"
 #include "bark/world/evaluation/ltl/label_functions/on_road_label_function.hpp"
+#include "bark/world/evaluation/stl/label_functions/safe_distance_label_function.hpp"
 #endif
 
 #ifdef PLANNER_UCT
@@ -122,6 +123,7 @@ using bark::models::dynamic::SingleTrackSteeringRateModel;
 
 #ifdef LTL_RULES
 using bark::world::evaluation::SafeDistanceLabelFunction;
+using bark::world::evaluation::SafeDistanceQuantizedLabelFunction;
 using bark::world::evaluation::LaneChangeLabelFunction;
 using bark::world::evaluation::AgentNearLabelFunction;
 using bark::world::evaluation::AgentBeyondPointLabelFunction;
@@ -416,7 +418,10 @@ py::tuple LabelToPython(const LabelFunctionPtr& label) {
   if (typeid(*label) == typeid(SafeDistanceLabelFunction)) {
     label_name = "SafeDistanceLabelFunction";
     return py::make_tuple(label, label_name);
-  } else if (typeid(*label) == typeid(LaneChangeLabelFunction)) {
+  } else if (typeid(*label) == typeid(SafeDistanceQuantizedLabelFunction)) {
+    label_name = "SafeDistanceQuantizedLabelFunction";
+    return py::make_tuple(label, label_name);
+  }else if (typeid(*label) == typeid(LaneChangeLabelFunction)) {
     label_name = "LaneChangeLabelFunction";
     return py::make_tuple(label, label_name);
   } else if (typeid(*label) == typeid(BelowSpeedLimitLabelFunction)) {
@@ -480,6 +485,9 @@ LabelFunctionPtr PythonToLabel(py::tuple t) {
   if (label_name.compare("SafeDistanceLabelFunction") == 0) {
     return std::make_shared<SafeDistanceLabelFunction>(
         t[0].cast<SafeDistanceLabelFunction>());
+  } else if (label_name.compare("SafeDistanceQuantizedLabelFunction") == 0) {
+    return std::make_shared<SafeDistanceQuantizedLabelFunction>(
+        t[0].cast<SafeDistanceQuantizedLabelFunction>());
   } else if (label_name.compare("LaneChangeLabelFunction") == 0) {
     return std::make_shared<LaneChangeLabelFunction>(
         t[0].cast<LaneChangeLabelFunction>());

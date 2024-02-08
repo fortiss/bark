@@ -4,7 +4,8 @@ cc_test(
     copts = ["-Iexternal/gtest/include"],
     deps = [
         "//bark/models/behavior/motion_primitives",
-        "//bark/world/evaluation/ltl/label_functions:label_function",
+        "//bark/world/evaluation/ltl/label_functions:label_function",        
+        "//bark/world/evaluation/stl/label_functions:label_function_stl",        
         "//bark/world/tests:make_test_world",
         "@gtest//:gtest_main",
     ],

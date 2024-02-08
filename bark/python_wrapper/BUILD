@@ -28,6 +28,8 @@ pybind_extension(
     "//bark/world/evaluation:evaluation",
     "//bark/world/evaluation/ltl/label_functions:label_function",
     "//bark/world/evaluation/ltl:evaluator_ltl",
+    "//bark/world/evaluation/stl/label_functions:label_function_stl",
+    "//bark/world/evaluation/stl:evaluator_stl",
     "//bark/world/evaluation/safe_distances:safe_distances",
     "//bark/commons/params:params",
     "//bark/commons/util:util",
@@ -61,7 +63,7 @@ pybind_extension(
   + select({"//bark/world/evaluation/ltl:_ltl_rules": ["@rule_monitor_project//python/bindings:rule_monitor"], "//conditions:default": []}),
   copts = select({"//bark/models/behavior/plan:_planner_uct" : ["-D PLANNER_UCT"], "//conditions:default": []})
   + select({"//bark/models/behavior/plan:_planner_rules_mcts" : ["-D PLANNER_RULES_MCTS"], "//conditions:default": []})
-  + select({"//bark/world/evaluation/ltl:_ltl_rules" : ["-D LTL_RULES"], "//conditions:default": []})
+  + select({"//bark/world/evaluation/ltl:_ltl_rules" : ["-D LTL_RULES"], "//conditions:default": []})  
   + select({"//bark/world/evaluation/rss:_rss" : ["-D RSS"], "//conditions:default": []})
   + select({"//bark/models/behavior/plan:_planner_miqp" : ["-D PLANNER_MIQP", "-DIL_STD", "-fPIC", "-DILOUSEMT", "-D_REENTRANT"], "//conditions:default": []}),
   # linkopts = ["-L/usr/local/lib/"]
@@ -103,7 +105,8 @@ pybind_library(
         "//bark/models/behavior/behavior_safety:behavior_safety",
         "//bark/models/behavior/behavior_rss:behavior_rss",
         "//bark/models/behavior/idm/stochastic:stochastic",
-        "//bark/world/evaluation/ltl/label_functions:label_function"
+        "//bark/world/evaluation/ltl/label_functions:label_function",
+        "//bark/world/evaluation/stl/label_functions:label_function_stl"
     ],
     copts = select({"//bark/world/evaluation/ltl:_ltl_rules" : ["-D LTL_RULES"], "//conditions:default": []}),
 )
