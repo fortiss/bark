@@ -13,7 +13,9 @@
 #include "bark/world/objects/object.hpp"
 #include "bark/world/world.hpp"
 #include "bark/commons/transformation/frenet_state.hpp"
-#include "python_interpreter.hpp"
+#include <pybind11/embed.h> 
+
+namespace py = pybind11;
 
 namespace bark {
 namespace world {
@@ -44,9 +46,10 @@ public:
   double UpdateStlSpec(double stl_spec_timestep, std::vector<std::pair<std::string, double>> dataset) const;
 
 private:
-  static PyObject* pModule;
+  static py::module* pModule_;
+  
+  py::object* pInstance_;
 
-  PyObject* pInstance;
 };
 
 }  // namespace evaluation
