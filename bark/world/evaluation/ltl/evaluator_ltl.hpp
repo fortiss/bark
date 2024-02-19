@@ -43,11 +43,11 @@ class EvaluatorLTL : public BaseEvaluator {
   const std::vector<RuleState>& GetRuleStates() const;
   const LabelFunctions& GetLabelFunctions() const;
   double GetSafetyViolations() const;
-
- protected:
+  virtual double GetRuleViolationPenalty() { return 1.0; };
   virtual EvaluationReturn Evaluate(
       const world::ObservedWorld& observed_world) override;
-  virtual double GetRuleViolationPenalty() { return 1.0; };
+
+ protected:
   LabelFunctions label_functions_;    
 
  private:

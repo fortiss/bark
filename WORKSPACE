@@ -65,6 +65,12 @@ git_repository(
   branch="ltl_configue",
   remote = "https://github.com/fortiss/bark-ml"
 )
+
+#local_repository(
+#    name = "bark_ml",
+#    path = "/home/acarcelik/fortiss_bark_ws/bark-ml"
+#)
+
 # --------------------------------------------------
 
 # ------------------- LTL RuleMonitor --------------

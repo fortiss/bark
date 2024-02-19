@@ -227,7 +227,6 @@ cc_library(
         ":evaluator_number_of_agents",
         ":commons",
         "//bark/world/evaluation/ltl:evaluator_ltl",
-        "//bark/world/evaluation/stl:evaluator_stl",
     ] + select({
         "//bark/world/evaluation/rss:_rss": [
             "//bark/world/evaluation/rss:evaluator_rss"

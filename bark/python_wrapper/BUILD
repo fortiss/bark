@@ -28,8 +28,6 @@ pybind_extension(
     "//bark/world/evaluation:evaluation",
     "//bark/world/evaluation/ltl/label_functions:label_function",
     "//bark/world/evaluation/ltl:evaluator_ltl",
-    "//bark/world/evaluation/stl/label_functions:label_function_stl",
-    "//bark/world/evaluation/stl:evaluator_stl",
     "//bark/world/evaluation/safe_distances:safe_distances",
     "//bark/commons/params:params",
     "//bark/commons/util:util",
@@ -80,7 +78,7 @@ pybind_extension(
 # needed for external python wrapping (planners)
 pybind_library(
     name = "common",
-    hdrs = ["common.hpp", "polymorphic_conversion.hpp"],
+    hdrs = ["common.hpp", "polymorphic_conversion.hpp", "world/ltl.hpp"],
     deps = [
         "@com_github_eigen_eigen//:eigen",
     ],
@@ -105,8 +103,7 @@ pybind_library(
         "//bark/models/behavior/behavior_safety:behavior_safety",
         "//bark/models/behavior/behavior_rss:behavior_rss",
         "//bark/models/behavior/idm/stochastic:stochastic",
-        "//bark/world/evaluation/ltl/label_functions:label_function",
-        "//bark/world/evaluation/stl/label_functions:label_function_stl"
+        "//bark/world/evaluation/ltl/label_functions:label_function",                
     ],
     copts = select({"//bark/world/evaluation/ltl:_ltl_rules" : ["-D LTL_RULES"], "//conditions:default": []}),
 )
