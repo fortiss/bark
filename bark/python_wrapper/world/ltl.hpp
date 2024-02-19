@@ -75,7 +75,9 @@ class PyEvaluatorLTL : public EvaluatorLTL {
  public:
     using EvaluatorLTL::Evaluate;     
     using EvaluatorLTL::EvaluatorLTL;
+    #ifdef LTL_RULES
     using EvaluatorLTL::GetRuleViolationPenalty;
+    #endif
 
     EvaluationReturn Evaluate(const ObservedWorld& observed_world) override {
         PYBIND11_OVERLOAD(
@@ -86,15 +88,18 @@ class PyEvaluatorLTL : public EvaluatorLTL {
         );
     }
 
+    #ifdef LTL_RULES
     double GetRuleViolationPenalty() override {
         PYBIND11_OVERLOAD(
           double,
           EvaluatorLTL,
           GetRuleViolationPenalty
-    );
-}
+        );
+    }
+     #endif
 };
 
+#ifdef LTL_RULES
 class SafeDistanceQuantizedLabelFunctionWrapper : public SafeDistanceLabelFunction {
 public:
   SafeDistanceQuantizedLabelFunctionWrapper(const std::string& label_str, bool to_rear, double delta_ego, double delta_others, 
@@ -191,6 +196,7 @@ public:
 private:
   py::object stlInstance;  
 };
+#endif
 
 void python_ltl(py::module m);
 
