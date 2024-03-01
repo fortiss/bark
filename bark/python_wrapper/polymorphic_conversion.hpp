@@ -16,6 +16,7 @@
 #include "bark/world/goal_definition/goal_definition.hpp"
 #ifdef LTL_RULES
 #include "bark/world/evaluation/ltl/label_functions/base_label_function.hpp"
+#include "bark/python_wrapper/world/ltl.hpp"
 #endif
 
 namespace py = pybind11;

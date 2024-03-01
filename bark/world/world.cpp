@@ -172,6 +172,7 @@ void World::AddObject(const objects::ObjectPtr& object) {
 void World::AddEvaluator(const std::string& name,
                          const EvaluatorPtr& evaluator) {
   evaluators_[name] = evaluator;
+  // std::cout << "AddEvaluator in World: " << name << ";" << evaluator << "\n";
 }
 void World::UpdateAgentStateFromExtern(const float& delta_time,
                                        const AgentStateMap& state_map,
@@ -212,6 +213,7 @@ EvaluationMap World::Evaluate() const {
 std::vector<ObservedWorld> World::Observe(
     const std::vector<AgentId>& agent_ids) const {
   WorldPtr current_world(this->Clone());
+
   std::vector<ObservedWorld> observed_worlds;
   for (auto agent_id : agent_ids) {
     if (agents_.find(agent_id) == agents_.end()) {

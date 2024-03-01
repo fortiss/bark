@@ -411,10 +411,14 @@ PrimitivePtr PythonToPrimitive(py::tuple t) {
 }
 
 #ifdef LTL_RULES
+
 py::tuple LabelToPython(const LabelFunctionPtr& label) {
   std::string label_name;
   if (typeid(*label) == typeid(SafeDistanceLabelFunction)) {
-    label_name = "SafeDistanceLabelFunction";
+    label_name = "SafeDistanceLabelFunction";      
+    return py::make_tuple(label, label_name);
+  } else if (typeid(*label) == typeid(SafeDistanceQuantizedLabelFunctionWrapper)) {
+    label_name = "SafeDistanceQuantizedLabelFunctionWrapper";      
     return py::make_tuple(label, label_name);
   } else if (typeid(*label) == typeid(LaneChangeLabelFunction)) {
     label_name = "LaneChangeLabelFunction";
@@ -472,6 +476,7 @@ py::tuple LabelToPython(const LabelFunctionPtr& label) {
     LOG(ERROR) << "Unknown LabelType for polymorphic conversion.";
     throw;
   }
+
   // Should never be reached
   return py::make_tuple(label, label_name);
 }
@@ -480,6 +485,9 @@ LabelFunctionPtr PythonToLabel(py::tuple t) {
   if (label_name.compare("SafeDistanceLabelFunction") == 0) {
     return std::make_shared<SafeDistanceLabelFunction>(
         t[0].cast<SafeDistanceLabelFunction>());
+  } else if (label_name.compare("SafeDistanceQuantizedLabelFunctionWrapper") == 0) {
+    return std::make_shared<SafeDistanceQuantizedLabelFunctionWrapper>(
+        t[0].cast<SafeDistanceQuantizedLabelFunctionWrapper>());
   } else if (label_name.compare("LaneChangeLabelFunction") == 0) {
     return std::make_shared<LaneChangeLabelFunction>(
         t[0].cast<LaneChangeLabelFunction>());
@@ -532,7 +540,7 @@ LabelFunctionPtr PythonToLabel(py::tuple t) {
     return std::make_shared<
         GenericEgoLabelFunction<EvaluatorCollisionEgoAgent>>(
         t[0].cast<GenericEgoLabelFunction<EvaluatorCollisionEgoAgent>>());
-  } else {
+  } else {    
     LOG(ERROR) << "Unknown LabelType for polymorphic conversion.";
     throw;
   }
