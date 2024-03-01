@@ -116,7 +116,7 @@
     "python.pythonPath": "./bark/python_wrapper/venv/bin/python",
     "python.linting.pylintEnabled": true,
     "editor.insertSpaces": true,
-    "editor.detectIndentation": false,
+    "editor.detectIndentation": true,
     "python.linting.enabled": true,
     "python.formatting.provider": "autopep8",
     "[cpp]": {
@@ -128,5 +128,6 @@
     "licenser.license": "MIT",
     "licenser.author": "fortiss GmbH",
     "licenser.projectName": "BARK",
-    "C_Cpp.dimInactiveRegions": false
+    "C_Cpp.dimInactiveRegions": false,
+    "python.linting.flake8Enabled": false
 }

@@ -40,7 +40,6 @@ std::tuple<Trajectory, Action> BehaviorIDMClassic::GenerateTrajectory(
                            static_cast<int>(StateDefinition::MIN_STATE_SIZE));
   dynamic::State ego_vehicle_state = observed_world.CurrentEgoState();
   geometry::Point2d pose = observed_world.CurrentEgoPosition();
-
   double initial_acceleration = 0.0;
   if (!line.obj_.empty()) {
     // adding state at t=0
@@ -59,6 +58,9 @@ std::tuple<Trajectory, Action> BehaviorIDMClassic::GenerateTrajectory(
     for (int i = 1; i < GetNumTrajectoryTimePoints(); ++i) {
       std::tie(acc, rel_distance) =
           GetTotalAcc(observed_world, rel_values, rel_distance, dt);
+      if (std::isnan(acc)) {
+        acc = 0.;
+      }
       BARK_EXPECT_TRUE(!std::isnan(acc));
       // Set initial acceleration to maintain action value
       if (i == 1) {
