@@ -23,6 +23,8 @@ using models::behavior::BehaviorStatus;
 using models::execution::ExecutionStatus;
 using bark::models::observer::ObserverModelNone;
 using bark::world::renderer::Renderer;
+using bark::models::behavior::Action;
+using bark::models::behavior::DiscreteAction;
 
 World::World(const commons::ParamsPtr& params)
     : commons::BaseType(params),
@@ -82,7 +84,38 @@ void World::PlanAgents(const double& delta_time) {
     }
   }
 }
-
+void World::PlanAndExecuteAgentsWithID(const double& delta_time, const std::vector<AgentId>& agent_ids){
+  using models::dynamic::StateDefinition::TIME_POSITION;
+  UpdateAgentRTree();
+  WorldPtr current_world(this->Clone());
+  const double inc_world_time = world_time_ + delta_time;
+  for (auto agent_id : agent_ids){
+    AgentPtr agent = NULL;
+    agent = GetAgent(agent_id);
+    if (agent->IsValidAtTime(world_time_)) {
+      ObservedWorld observed_world = observer_->Observe(
+        current_world, agent_id);
+      agent->SetSensedWorld(std::make_shared<ObservedWorld>(observed_world));
+      agent->PlanBehavior(delta_time, observed_world);
+      if (agent->GetBehaviorStatus() == BehaviorStatus::VALID){
+        agent->PlanExecution(inc_world_time);
+      }
+      if (agent->GetExecutionStatus() == ExecutionStatus::VALID){
+        agent->UpdateStateAction();
+        // make sure all agents have the same world time
+        // otherwise the simulation is not correct
+        const auto& agent_state = agent->GetCurrentState();
+        BARK_EXPECT_TRUE(fabs(agent_state(TIME_POSITION) - inc_world_time) <
+                       0.01); 
+      }
+    }
+    else{
+      std::cout << "Agent" << agent_id << " is not valid." << std::endl;
+    }
+  }
+  RemoveInvalidAgents();
+  world_time_ = inc_world_time;
+}
 void World::Execute(const double& delta_time) {
   const double inc_world_time = world_time_ + delta_time;
   using models::dynamic::StateDefinition::TIME_POSITION;
@@ -141,7 +174,34 @@ void World::AddEvaluator(const std::string& name,
   evaluators_[name] = evaluator;
   // std::cout << "AddEvaluator in World: " << name << ";" << evaluator << "\n";
 }
+void World::UpdateAgentStateFromExtern(const float& delta_time,
+                                       const AgentStateMap& state_map,
+                                       const std::vector<AgentId>& exclude_agent_ids) {
+  // this function should be called before calling PlanAgents
+  // TODO(@xliu): use StateActionPair as parameter
+  world_time_ += delta_time;
 
+  for (const auto& agent_state : state_map) {
+    if ((!exclude_agent_ids.empty()) &&
+        std::count(exclude_agent_ids.begin(), exclude_agent_ids.end(), agent_state.first)) {
+      continue;
+    }
+    AgentPtr agent = NULL;
+    agent = GetAgent(agent_state.first);
+
+    if (agent) {
+      // TODO(@xliu): read control from Carla to get actions
+      StateActionPair pair;
+      pair.first = agent_state.second;
+      pair.second = Action(DiscreteAction(0));
+      agent->SetCurrentStateAction(pair);
+    } else {
+      std::cout << "Agent" << agent_state.first << " doesn't exist." << std::endl;
+    }
+  }
+
+  //UpdateHorizonDrivingCorridors();
+}
 EvaluationMap World::Evaluate() const {
   EvaluationMap evaluation_results;
   for (auto const& evaluator : evaluators_) {

@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <algorithm>    // std::count
 
 #include <boost/geometry/index/rtree.hpp>
 #include "bark/commons/transformation/frenet.hpp"
@@ -82,6 +83,13 @@ class World : public commons::BaseType {
    * @param  delta_time: minimum planning time
    */
   void PlanAgents(const double& delta_time);
+
+  /**
+   * @brief Calls the behavior and execution model of the agents and step world
+   * @param  delta_time: minimum planning time
+   * @param agent_ids: the specific agents to be planned and executed
+   */
+  void PlanAndExecuteAgentsWithID(const double& delta_time, const std::vector<AgentId>& agent_ids);
 
   /**
    * @brief  Updates the agent states
@@ -201,6 +209,9 @@ class World : public commons::BaseType {
 
   void AddEvaluator(const std::string& name, const EvaluatorPtr& evaluator);
 
+  void UpdateAgentStateFromExtern(const float& delta_time,
+                                  const AgentStateMap& state_map,
+                                  const std::vector<AgentId>& exclude_agent_ids);
   //! Functions
   void ClearEvaluators() { evaluators_.clear(); }
   void ClearAgents() { agents_.clear(); }
