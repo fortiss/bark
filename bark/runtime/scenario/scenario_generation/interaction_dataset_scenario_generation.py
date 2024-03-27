@@ -19,7 +19,7 @@ from bark.core.models.dynamic import *
 from bark.core.models.execution import *
 from bark.runtime.scenario.interaction_dataset_processing.scenario_track_info import ScenarioTrackInfo
 from bark.runtime.scenario.interaction_dataset_processing.agent_track_info import AgentTrackInfo
-
+# from bark_ml.library_wrappers.lib_tf_agents.agents.sac_agent import BehaviorSACAgent
 
 class InteractionDatasetScenarioGeneration(ScenarioGeneration):
 
@@ -58,7 +58,6 @@ class InteractionDatasetScenarioGeneration(ScenarioGeneration):
         """
             see baseclass
         """
-
         if num_scenarios != 1:
             raise ValueError("Replay supports only 1 scenario")
 
