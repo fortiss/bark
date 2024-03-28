@@ -65,13 +65,12 @@ benchmark_database_release()
 #  branch="ltl_configue",
 #  remote = "https://github.com/fortiss/bark-ml"
 #)
-
-local_repository(
-    name = "bark_ml_project",
-    path = "/home/acarcelik/fortiss_bark_ws/bark-ml"
-)
-load("@bark_ml_project//utils:dependencies.bzl", "bark_ml_dependencies")
-bark_ml_dependencies()
+# local_repository(
+#     name = "bark_ml_project",
+#     path = "/home/acarcelik/fortiss_bark_ws/bark-ml"
+# )
+# load("@bark_ml_project//utils:dependencies.bzl", "bark_ml_dependencies")
+# bark_ml_dependencies()
 
 # --------------------------------------------------
 

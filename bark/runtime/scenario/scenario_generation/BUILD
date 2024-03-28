@@ -14,8 +14,7 @@ py_library(
         "@com_github_interaction_dataset_interaction_dataset//:interaction-tools",
         "//bark/runtime/scenario/scenario_generation/config_readers:config_readers",
         "//bark/runtime/scenario/interaction_dataset_processing:interaction_dataset_processing",
-        "//bark/runtime/commons:commons",
-        "@bark_ml_project//bark_ml/library_wrappers/lib_tf_agents/agents:agents"
+        "//bark/runtime/commons:commons"
     ],
     visibility = ["//visibility:public"],
 )
