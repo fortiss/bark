@@ -43,6 +43,9 @@ class ScenarioTrackInfo:
 
     def GetXYOffset(self):
         return self._xy_offset
+    
+    def SetXYOffset(self, xy_offset):
+        self._xy_offset = xy_offset
 
     def GetStartTimeMs(self):
         # time in ms

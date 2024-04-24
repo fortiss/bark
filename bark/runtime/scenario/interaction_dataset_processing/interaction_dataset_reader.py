@@ -126,7 +126,7 @@ class InteractionDatasetReader:
         return track
 
     def AgentFromTrackfile(self, track_params, param_server, scenario_track_info, agent_id, goal_def):
-
+        xy_offset = scenario_track_info.GetXYOffset()
         if scenario_track_info.GetEgoTrackInfo().GetTrackId() == agent_id:
             agent_track_info = scenario_track_info.GetEgoTrackInfo()
         elif agent_id in scenario_track_info.GetOtherTrackInfos().keys():
@@ -139,7 +139,7 @@ class InteractionDatasetReader:
         agent_id = agent_track_info.GetTrackId()
         track = self.TrackFromTrackfile(fname, track_id)
 
-        xy_offset = scenario_track_info.GetXYOffset()
+        
 
         # create behavior model from track, we use start time of scenario here
         start_time = scenario_track_info.GetStartTimeMs()
