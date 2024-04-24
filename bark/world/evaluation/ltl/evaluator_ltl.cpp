@@ -27,7 +27,7 @@ namespace evaluation {
 EvaluatorLTL::EvaluatorLTL(bark::world::objects::AgentId agent_id,
                            const std::string& ltl_formula_str,
                            const LabelFunctions& label_functions)
-    : safety_violations_(0),
+    : safety_violations_(0.0),
       agent_id_(agent_id),
       ltl_formula_str_(ltl_formula_str),
       monitor_(RuleMonitor::MakeRule(ltl_formula_str, -1.0, 0)),
@@ -42,7 +42,7 @@ EvaluationReturn EvaluatorLTL::Evaluate(const bark::world::World& world) {
   if (world.GetAgent(agent_id_)) {
     return Evaluate(cloned_world->Observe({agent_id_})[0]);
   } else {
-    return static_cast<int>(safety_violations_);
+    return static_cast<double>(safety_violations_);
   }
 }
 
@@ -78,7 +78,7 @@ EvaluationReturn EvaluatorLTL::Evaluate(
     // Check for violations of safety properties
     double penalty = rs.GetAutomaton()->Evaluate(labels, rs);
     if (penalty != 0.0) {
-      safety_violations_++;
+      safety_violations_ += GetRuleViolationPenalty();
       VLOG(1) << "Rule \"" << ltl_formula_str_ << "\" violated in timestep "
               << observed_world.GetWorldTime() << " for agent ids "
               << rs.GetAgentIds() << " !";
@@ -93,7 +93,8 @@ EvaluationReturn EvaluatorLTL::Evaluate(
       ++guarantee_violations;
     }
   }
-  return static_cast<int>(safety_violations_ + guarantee_violations);
+
+  return static_cast<double>(safety_violations_ + guarantee_violations);
 }
 LabelMap EvaluatorLTL::EvaluateLabels(
     const ObservedWorld& observed_world) const {
@@ -147,7 +148,7 @@ const LabelFunctions& EvaluatorLTL::GetLabelFunctions() const {
   return label_functions_;
 }
 
-unsigned int EvaluatorLTL::GetSafetyViolations() const {
+double EvaluatorLTL::GetSafetyViolations() const {
   return safety_violations_;
 }
 

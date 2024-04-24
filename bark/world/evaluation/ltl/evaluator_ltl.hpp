@@ -42,22 +42,25 @@ class EvaluatorLTL : public BaseEvaluator {
   EvaluationReturn Evaluate(const world::World& world) override;
   const std::vector<RuleState>& GetRuleStates() const;
   const LabelFunctions& GetLabelFunctions() const;
-  unsigned int GetSafetyViolations() const;
+  double GetSafetyViolations() const;
+  virtual double GetRuleViolationPenalty() { return 1.0; };
+  virtual EvaluationReturn Evaluate(
+      const world::ObservedWorld& observed_world) override;
+
+ protected:
+  LabelFunctions label_functions_;    
 
  private:
-  EvaluationReturn Evaluate(
-      const world::ObservedWorld& observed_world) override;
   std::vector<int> GetKnownAgents();
   void AddKnownAgents(const std::vector<int>& new_agents);
   void RemoveRuleStates(std::vector<int> current_agents);
 
-  unsigned int safety_violations_;
+  double safety_violations_;
   AgentId agent_id_;
   std::string ltl_formula_str_;
   std::vector<RuleState> rule_states_;
   RuleMonitor::RuleMonitorSPtr monitor_;
-  std::set<AgentId> known_agents_;
-  LabelFunctions label_functions_;
+  std::set<AgentId> known_agents_;  
   LabelMap EvaluateLabels(const ObservedWorld& observed_world) const;
 #else
   EvaluatorLTL();

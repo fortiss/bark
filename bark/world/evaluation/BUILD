@@ -242,5 +242,3 @@ cc_library(
     deps = ["//bark/world/evaluation/ltl:include"],
     visibility = ["//visibility:public"],
 )
-
-
