@@ -12,6 +12,7 @@ from bark.runtime.scenario.interaction_dataset_processing import InteractionData
 from bark.runtime.scenario.interaction_dataset_processing import DatasetDecomposer
 from bark.runtime.commons.model_json_conversion import ModelJsonConversion
 from bark.runtime.commons import ParameterServer
+from bark.runtime.scenario.interaction_dataset_processing import InitStateFromTrack
 # PyBind imports
 from bark.core.world.map import *
 from bark.core.models.dynamic import *
@@ -21,12 +22,13 @@ from bark.core.world.goal_definition import *
 from bark.core.geometry import *
 
 import logging
+import numpy as np
 
 
 class InteractionDatasetScenarioGenerationFull(ScenarioGeneration):
     """This class reads in a track file from the interaction dataset
     and generates a scenario for each agent as the eval agent. The parameters 
-    are extracted from the json file under ["Scenario"]["Generation"]["InteractionDatasetScenarioGenerationFull"].
+    are extracted from the json file under ["ScenarioGeneration"]["InteractionDatasetScenarioGenerationFull"].
     """
 
     def __init__(self, params=None, num_scenarios=None, random_seed=None):
@@ -36,7 +38,7 @@ class InteractionDatasetScenarioGenerationFull(ScenarioGeneration):
     def initialize_params(self, params):
         super().initialize_params(params)
         params_temp = \
-            self._params["Scenario"]["Generation"]["InteractionDatasetScenarioGenerationFull"]
+            self._params["ScenarioGeneration"]["InteractionDatasetScenarioGenerationFull"]
         self._map_file_name = params_temp["MapFilename",
                                           "Path to the open drive map",
                                           "bark/runtime/tests/data/DR_DEU_Merging_MT_v01_shifted.xodr"]
@@ -104,6 +106,7 @@ class InteractionDatasetScenarioGenerationFull(ScenarioGeneration):
                     scenario_list.append(scenario)
                 else:
                     break
+        print("Interaction dataset generation Number of scenarios: ", len(scenario_list))
         return scenario_list
 
     def __create_single_scenario__(self, scen_track_info):
@@ -137,13 +140,33 @@ class InteractionDatasetScenarioGenerationFull(ScenarioGeneration):
                 # we do not change behavior model of ego agent -> will be set in benchmark
                 track_params["behavior_model"] = None
 
+            goal_lane_id = 0
             if self._use_goal_from_road:
-                goal = self.__infer_goal_from_road__(lc=0)
+                goal = self.__infer_goal_from_road__(lc=goal_lane_id)
             else:
                 goal = None
 
+            if track_id == ego_track_id:
+                start_time = scen_track_info.GetStartTimeMs()
+                ego_track_info = scen_track_info.GetEgoTrackInfo()
+                track = self._interaction_ds_reader.TrackFromTrackfile(ego_track_info.GetFileName(), track_id)
+                ego_xy_offset = scen_track_info.GetXYOffset()
+                try:
+                    initial_state = InitStateFromTrack(track, ego_xy_offset, start_time)
+                except:
+                    raise ValueError("Could not retrieve initial state of agent {} at t={}.".format(
+                        track_id, start_time))
+                # check if agent in the goal lane
+                lane_corr = self._road_corridor.lane_corridors[goal_lane_id]
+                pt = Point2d(initial_state[1], initial_state[2])
+                if Collide(lane_corr.polygon, pt):
+                    #calculate distance to other lane center line
+                    dist = Distance(self._road_corridor.lane_corridors[1].center_line, pt)
+                    scen_track_info.SetXYOffset([0, dist])
+
             agent = self._interaction_ds_reader.AgentFromTrackfile(
                 track_params, self._params, scen_track_info, track_id, goal_def=goal)
+
 
             # set first valid time stamp of the agent (in relation to scenario start)
             agent.first_valid_timestamp = scen_track_info.GetTimeOffsetOfAgentInSec(
@@ -203,9 +226,26 @@ class InteractionDatasetScenarioGenerationFull(ScenarioGeneration):
             GoalDefinitionPolygon: The goal definition polygon.
         """
         lane_corr = self._road_corridor.lane_corridors[lc]
-        goal_polygon = Polygon2d([0, 0, 0], [
-                                 Point2d(-10, -10), Point2d(-10, 10), Point2d(10, 10), Point2d(10, -10)])
-        goal_point = GetPointAtS(
-            lane_corr.center_line, lane_corr.center_line.Length()*self._rel_pose_goal_on_road)
-        goal_polygon = goal_polygon.Translate(goal_point)
-        return GoalDefinitionPolygon(goal_polygon)
+        # goal_polygon = Polygon2d([0, 0, 0], [
+        #                          Point2d(-10, -10), Point2d(-10, 10), Point2d(10, 10), Point2d(10, -10)])
+        # goal_point = GetPointAtS(
+        #     lane_corr.center_line, lane_corr.center_line.Length()*self._rel_pose_goal_on_road)
+        # goal_polygon = goal_polygon.Translate(goal_point)
+        # return GoalDefinitionPolygon(goal_polygon)
+        points = lane_corr.center_line.ToArray()
+        len_cent_line_ = len(points)
+        st_idx = [0.7,0.9]
+        idx = np.random.randint(st_idx[0]*len_cent_line_, st_idx[1]*len_cent_line_)
+        pt_num = None
+        if pt_num is None:
+            new_line = Line2d(points[idx:])
+        else:
+            pt_num = int(pt_num * len_cent_line_)
+            new_line = Line2d(points[idx:idx+pt_num])
+        max_lateral_dist_= tuple([1.0,1.0])
+        max_orient_diff_= tuple([0.15, 0.15])
+        velocity_range_= tuple([0.0, 20.0])
+        return GoalDefinitionStateLimitsFrenet(new_line,
+                                            max_lateral_dist_,
+                                            max_orient_diff_,
+                                            velocity_range_)
