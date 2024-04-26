@@ -38,7 +38,7 @@ class InteractionDatasetScenarioGenerationFull(ScenarioGeneration):
     def initialize_params(self, params):
         super().initialize_params(params)
         params_temp = \
-            self._params["ScenarioGeneration"]["InteractionDatasetScenarioGenerationFull"]
+            self._params["Scenario"]["Generation"]["InteractionDatasetScenarioGenerationFull"]
         self._map_file_name = params_temp["MapFilename",
                                           "Path to the open drive map",
                                           "bark/runtime/tests/data/DR_DEU_Merging_MT_v01_shifted.xodr"]
